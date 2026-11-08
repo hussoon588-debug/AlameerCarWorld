@@ -1,0 +1,50 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UCW — إدارة اللعبة</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#edf2f7;font-family:Tahoma,Arial,sans-serif}header{padding:22px 5%;background:#131f33;border-bottom:1px solid #31445b}h1{margin:0;font-size:22px}.wrap{max-width:1200px;margin:25px auto;padding:0 18px}.card{background:#131f33;border:1px solid #2c4058;border-radius:14px;padding:18px;margin:14px 0}input,button,select{padding:11px;border-radius:8px;border:1px solid #52657b;background:#0e1825;color:white;margin:4px;font-family:inherit}button{cursor:pointer;background:#16a37b;border:0;font-weight:bold}button.secondary{background:#40536b}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}.stat{font-size:28px;font-weight:bold;color:#ffd166}.muted{color:#9ab0c7}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#0a111d;padding:10px;border-radius:8px;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse}td,th{text-align:right;padding:9px;border-bottom:1px solid #2c4058;font-size:14px}tr:hover{background:#172a44}.online-dot{display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-left:6px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.tabs button{background:#22334a}.tabs button.active{background:#16a37b}
+</style></head><body><header><h1>ULTIMATE CAR WORLD — لوحة الإدارة</h1><div class="muted">الصلاحيات تُفرض على الخادم؛ إخفاء الأزرار ليس أماناً.</div></header><main class="wrap">
+<section class="card"><h3>الاتصال</h3><input id="api" value="" style="width:min(420px,90%)" placeholder="عنوان API"><br>
+<input id="username" placeholder="اسم المستخدم"><input id="password" type="password" placeholder="كلمة المرور"><button onclick="login()">دخول</button><button class="secondary" onclick="logout()">خروج</button><p id="status" class="muted">غير متصل</p></section>
+<section id="dashboard" hidden>
+<div class="grid"><div class="card"><div class="muted">اللاعبون</div><div class="stat" id="users">—</div></div>
+<div class="card"><div class="muted">السيارات</div><div class="stat" id="cars">—</div></div>
+<div class="card"><div class="muted">المعاملات</div><div class="stat" id="transactions">—</div></div>
+<div class="card"><div class="muted">إجمالي الأرصدة YER</div><div class="stat" id="treasury">—</div></div>
+<div class="card"><div class="muted">المتصرفون الآن <span class="online-dot"></span></div><div class="stat" id="online">—</div></div></div>
+<div class="tabs">
+ <button class="active" data-tab="users" onclick="show('users',this)">اللاعبون</button>
+ <button data-tab="cars" onclick="show('cars',this)">إدارة السيارات</button>
+ <button data-tab="missions" onclick="show('missions',this)">المهام</button>
+ <button data-tab="wallet" onclick="show('wallet',this)">الرصيد</button>
+ <button data-tab="tx" onclick="show('tx',this)">المعاملات</button>
+ <button data-tab="audit" onclick="show('audit',this)">التدقيق</button>
+ <button data-tab="tel" onclick="show('tel',this)">القياس عن بُعد</button>
+</div>
+<div id="tab-users" class="card"><h3>اللاعبون <button onclick="loadUsers()">تحديث</button></h3><div id="userlist"></div></div>
+<div id="tab-cars" class="card" hidden><h3>إضافة سيارة</h3><div class="grid"><input id="code" placeholder="رمز فريد"><input id="name" placeholder="اسم السيارة"><input id="category" placeholder="الفئة"><input id="price" type="number" placeholder="السعر YER"><input id="stock" type="number" value="-1" placeholder="المخزون (-1 غير محدود)"><input id="topSpeed" type="number" placeholder="السرعة القصوى" value="220"><input id="accel" type="number" placeholder="التسارع" value="12"><input id="handling" type="number" step="0.01" placeholder="الثبات" value="0.85"><input id="color" type="color" value="#1a1a2e"></div><input id="desc" placeholder="الوصف" style="width:90%"><br><button onclick="addCar()">إضافة السيارة</button></div>
+<div id="tab-missions" class="card" hidden><h3>إنشاء مهمة</h3><div class="grid"><input id="mcode" placeholder="رمز المهمة"><input id="mtitle" placeholder="العنوان"><input id="mreward" type="number" placeholder="المكافأة YER"><input id="mxp" type="number" placeholder="XP" value="20"></div><input id="mdesc" placeholder="الوصف" style="width:90%"><br><button onclick="addMission()">إنشاء</button></div>
+<div id="tab-wallet" class="card" hidden><h3>إضافة رصيد (للمالك فقط)</h3><input id="uid" type="number" placeholder="رقم اللاعب"><input id="amount" type="number" placeholder="المبلغ YER"><input id="reason" placeholder="السبب"><button onclick="credit()">تنفيذ</button></div>
+<div id="tab-tx" class="card" hidden><h3>المعاملات <button onclick="loadTransactions()">تحديث</button></h3><pre id="txlist"></pre></div>
+<div id="tab-audit" class="card" hidden><h3>التدقيق <button onclick="loadAudit()">تحديث</button></h3><pre id="audit"></pre></div>
+<div id="tab-tel" class="card" hidden><h3>القياس عن بُعد (إثبات المهام) <button onclick="loadTel()">تحديث</button></h3><pre id="tel"></pre></div>
+</section>
+</main><script>
+$('api').value=localStorage.getItem('ucw_api')||(location.protocol+'//'+location.host);
+let token=localStorage.getItem('ucw_token')||'';const $=id=>document.getElementById(id);
+const base=()=> $('api').value.replace(/\/+$/,'');
+async function call(path,opts={}){let r=await fetch(base()+path,{...opts,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,...opts.headers}});let d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||r.status);return d}
+async function login(){try{localStorage.setItem('ucw_api',$('api').value);let r=await fetch(base()+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('username').value,password:$('password').value})});let d=await r.json();if(!r.ok)throw Error(d.error);token=d.token;localStorage.setItem('ucw_token',token);$('status').textContent='تم الدخول: '+d.user.username+' — '+d.user.role;await overview()}catch(e){$('status').textContent='خطأ: '+e.message}}
+function logout(){token='';localStorage.removeItem('ucw_token');$('dashboard').hidden=true;$('status').textContent='تم الخروج'}
+async function overview(){try{let d=await call('/api/admin/overview');$('dashboard').hidden=false;for(let k of ['users','cars','transactions','online'])$(k).textContent=Number(d[k]).toLocaleString('en-US');$('treasury').textContent=Number(d.treasuryYER).toLocaleString('en-US');await loadUsers();setInterval(overview,5000)}catch(e){$('status').textContent='تعذر: '+e.message}}
+function show(t,btn){document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');['users','cars','missions','wallet','tx','audit','tel'].forEach(x=>$('tab-'+x).hidden=x!==t);if(t==='tx')loadTransactions();if(t==='audit')loadAudit();if(t==='tel')loadTel();}
+async function loadUsers(){try{let a=await call('/api/admin/users');$('userlist').innerHTML='<table><tr><th>ID</th><th>المستخدم</th><th>الدور</th><th>الرصيد</th><th>المستوى</th><th>XP</th><th>الحظر</th><th>آخر ظهور</th><th></th></tr>'+a.map(u=>`<tr><td>${u.id}</td><td>${esc(u.username)}</td><td>${u.role}</td><td>${Number(u.balanceYER).toLocaleString()}</td><td>${u.level}</td><td>${u.xp}</td><td>${u.banned?'نعم':'لا'}</td><td class="muted">${u.last_seen||'—'}</td><td><button class="secondary" onclick="ban(${u.id},${u.banned?0:1})">${u.banned?'فك':'حظر'}</button></td></tr>`).join('')+'</table>'}catch(e){$('userlist').textContent=e.message}}
+async function addCar(){try{await call('/api/admin/cars',{method:'POST',body:JSON.stringify({code:$('code').value,name:$('name').value,category:$('category').value,priceYER:Number($('price').value),stock:Number($('stock').value),description:$('desc').value,topSpeed:Number($('topSpeed').value),accel:Number($('accel').value),handling:Number($('handling').value),color:$('color').value})});alert('تمت الإضافة');}catch(e){alert(e.message)}}
+async function addMission(){try{await call('/api/admin/missions',{method:'POST',body:JSON.stringify({code:$('mcode').value,title:$('mtitle').value,description:$('mdesc').value,rewardYER:Number($('mreward').value),rewardXP:Number($('mxp').value)})});alert('تمت إضافة المهمة');}catch(e){alert(e.message)}}
+async function credit(){try{await call('/api/admin/wallet-adjust',{method:'POST',body:JSON.stringify({userId:Number($('uid').value),amountYER:Number($('amount').value),reason:$('reason').value})});alert('تم');overview()}catch(e){alert(e.message)}}
+async function ban(id,b){try{await call(`/api/admin/users/${id}/ban`,{method:'POST',body:JSON.stringify({banned:!!b})});loadUsers()}catch(e){alert(e.message)}}
+async function loadTransactions(){$('txlist').textContent='جاري التحميل…';try{$('txlist').textContent=JSON.stringify(await call('/api/admin/transactions'),null,2)}catch(e){$('txlist').textContent=e.message}}
+async function loadAudit(){try{$('audit').textContent=JSON.stringify(await call('/api/admin/audit'),null,2)}catch(e){$('audit').textContent=e.message}}
+async function loadTel(){try{$('tel').textContent=JSON.stringify(await call('/api/admin/telemetry'),null,2)}catch(e){$('tel').textContent=e.message}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+if(token)overview();
+</script></body></html>

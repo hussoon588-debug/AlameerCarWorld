@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1220">
+<title>ULTIMATE CAR WORLD</title>
+<style>
+ *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:Tahoma,Arial,sans-serif;user-select:none;touch-action:none;}
+ #game{position:fixed;inset:0;}canvas{display:block;}
+ /* AUTH */
+ #auth{position:fixed;inset:0;background:linear-gradient(135deg,#0b1220,#1a2d4a);display:flex;align-items:center;justify-content:center;z-index:100;}
+ #auth .box{background:#131f33cc;border:1px solid #3a5578;border-radius:20px;padding:28px;width:min(420px,92vw);backdrop-filter:blur(8px);}
+ #auth h1{font-size:28px;text-align:center;margin-bottom:8px;background:linear-gradient(90deg,#ffd166,#ef476f,#06d6a0);-webkit-background-clip:text;background-clip:text;color:transparent;}
+ #auth .sub{text-align:center;color:#9ab0c7;margin-bottom:18px;font-size:13px;}
+ #auth input{width:100%;padding:13px;border-radius:10px;border:1px solid #3a5578;background:#0e1825;color:#fff;margin:6px 0;font-family:inherit;font-size:15px;}
+ #auth button{width:100%;padding:13px;border-radius:10px;border:0;background:linear-gradient(90deg,#06d6a0,#118ab2);color:#fff;font-weight:bold;font-size:16px;cursor:pointer;margin-top:10px;font-family:inherit;}
+ #auth button.alt{background:linear-gradient(90deg,#40536b,#2c3e50);}
+ #auth .err{color:#ef476f;margin-top:10px;text-align:center;font-size:13px;min-height:18px;}
+ #auth .logo{text-align:center;font-size:42px;margin-bottom:10px;}
+ /* LOADING */
+ #loading{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;z-index:90;flex-direction:column;}
+ #loading .bar{width:min(360px,80vw);height:8px;background:#1a2d4a;border-radius:4px;overflow:hidden;margin-top:16px;}
+ #loading .fill{height:100%;background:linear-gradient(90deg,#06d6a0,#ffd166);width:0%;transition:width .3s;}
+ #loading .txt{color:#ffd166;font-size:18px;}
+ /* HUD */
+ #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
+ .btn{pointer-events:auto;cursor:pointer;background:#0e1825cc;border:2px solid #3a5578;color:#fff;border-radius:14px;padding:10px 14px;font-family:inherit;font-size:14px;font-weight:bold;backdrop-filter:blur(4px);display:inline-flex;align-items:center;gap:8px;}
+ .btn:active{transform:scale(0.95);}
+ .btn .ico{font-size:20px;}
+ .topbar{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+ .user-card{background:#0e1825cc;border:2px solid #3a5578;border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:12px;backdrop-filter:blur(4px);min-width:200px;}
+ .avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#ffd166,#ef476f);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid #ffd166;}
+ .user-info{line-height:1.3;}
+ .user-info .name{font-weight:bold;font-size:15px;}
+ .user-info .lvl{font-size:12px;color:#ffd166;}
+ .xpbar{width:120px;height:6px;background:#3a5578;border-radius:3px;overflow:hidden;margin-top:4px;}
+ .xpbar > div{height:100%;background:linear-gradient(90deg,#ffd166,#ef476f);}
+ .resources{display:flex;gap:10px;}
+ .res{background:#0e1825cc;border:2px solid #3a5578;border-radius:12px;padding:8px 14px;display:flex;align-items:center;gap:8px;backdrop-filter:blur(4px);font-weight:bold;}
+ .res.cash{border-color:#06d6a0;} .res.coin{border-color:#ffd166;}
+ .res .v{font-size:16px;}
+ .top-icons{position:absolute;top:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+ .icon-btn{pointer-events:auto;width:56px;height:56px;border-radius:16px;background:#0e1825cc;border:2px solid #3a5578;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);font-size:10px;gap:2px;}
+ .icon-btn .big{font-size:22px;}
+ .icon-btn:active{transform:scale(0.9);}
+ /* Minimap */
+ .minimap{position:absolute;top:80px;right:10px;width:180px;height:180px;border-radius:50%;border:3px solid #3a5578;overflow:hidden;background:#0e1825cc;box-shadow:0 4px 16px #0008;}
+ .minimap canvas{width:100%;height:100%;}
+ .mm-n{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-weight:bold;font-size:12px;color:#fff;z-index:2;text-shadow:0 1px 2px #000;}
+ /* Speedometer */
+ .speedo{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#0e1825d0;border:3px solid #3a5578;border-radius:20px;padding:14px 28px;min-width:240px;text-align:center;backdrop-filter:blur(6px);}
+ .speedo .num{font-size:54px;font-weight:bold;line-height:1;}
+ .speedo .unit{font-size:14px;color:#9ab0c7;}
+ .speedo .gear{display:inline-block;margin-top:4px;font-size:22px;font-weight:bold;padding:2px 14px;border-radius:8px;background:#06d6a0;color:#0b1220;}
+ .speedo .fuel{margin-top:8px;font-size:11px;color:#9ab0c7;}
+ /* Controls */
+ .wheel-wrap{position:absolute;bottom:20px;left:20px;width:180px;height:180px;}
+ #wheel{width:100%;height:100%;}
+ .pedals{position:absolute;bottom:20px;right:20px;display:flex;gap:16px;align-items:flex-end;}
+ .pedal{width:90px;height:150px;border-radius:18px;border:3px solid #3a5578;background:linear-gradient(to top,#0e1825ee,#1a2d4aee);position:relative;display:flex;align-items:center;justify-content:center;font-size:14px;backdrop-filter:blur(4px);}
+ .pedal.brake{border-color:#ef476f;height:120px;}
+ .pedal.gas{border-color:#06d6a0;}
+ .pedal .grip{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:60%;height:8px;background:#3a5578;border-radius:4px;box-shadow:0 12px 0 #3a5578,0 24px 0 #3a5578,0 36px 0 #3a5578;}
+ .pedal.active{transform:scale(0.92);filter:brightness(1.4);}
+ .camerabtn,.hornbtn,.nitrobtn{position:absolute;}
+ .hornbtn{bottom:20px;left:210px;width:64px;height:64px;border-radius:50%;border:3px solid #3a5578;background:#0e1825cc;display:flex;align-items:center;justify-content:center;font-size:28px;}
+ .camerabtn{bottom:230px;right:20px;width:56px;height:56px;border-radius:50%;}
+ .nitrobtn{bottom:200px;right:120px;width:70px;height:70px;border-radius:50%;border:3px solid #06d6a0;background:radial-gradient(circle,#06d6a088,#0e1825cc);display:flex;align-items:center;justify-content:center;font-size:28px;}
+ .nitrobtn.active{box-shadow:0 0 30px #06d6a0;}
+ /* Side menu */
+ .side-menu{position:absolute;top:80px;left:10px;display:flex;flex-direction:column;gap:8px;}
+ .side-menu .menu-item{pointer-events:auto;display:flex;align-items:center;gap:10px;background:#0e1825cc;border:2px solid #3a5578;border-radius:14px;padding:10px 14px;cursor:pointer;backdrop-filter:blur(4px);font-weight:bold;font-size:13px;min-width:150px;}
+ .side-menu .menu-item:active{transform:translateX(4px);}
+ .side-menu .ico{font-size:20px;}
+ /* Panels */
+ .panel{position:fixed;inset:0;background:#000b;z-index:50;display:none;align-items:center;justify-content:center;padding:10px;}
+ .panel.open{display:flex;}
+ .panel .sheet{background:#131f33;border:2px solid #3a5578;border-radius:20px;padding:20px;width:min(900px,96vw);max-height:92vh;overflow:auto;position:relative;}
+ .panel h2{margin-bottom:16px;font-size:22px;color:#ffd166;display:flex;justify-content:space-between;align-items:center;}
+ .panel .close{position:absolute;top:12px;left:12px;width:36px;height:36px;border-radius:50%;background:#ef476f;border:0;color:#fff;font-size:20px;cursor:pointer;font-weight:bold;}
+ .car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+ .car-card{background:#0e1825;border:2px solid #3a5578;border-radius:14px;padding:12px;cursor:pointer;position:relative;}
+ .car-card.active{border-color:#ffd166;box-shadow:0 0 16px #ffd16644;}
+ .car-card.owned{border-color:#06d6a0;}
+ .car-card .preview{height:90px;background:linear-gradient(180deg,#1a2d4a,#0b1220);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:48px;}
+ .car-card .name{font-weight:bold;font-size:15px;}
+ .car-card .cat{color:#9ab0c7;font-size:12px;}
+ .car-card .price{color:#ffd166;font-weight:bold;margin-top:6px;}
+ .car-card .badge{position:absolute;top:8px;right:8px;background:#06d6a0;color:#0b1220;font-size:10px;padding:3px 8px;border-radius:8px;font-weight:bold;}
+ .car-card button{width:100%;margin-top:8px;padding:8px;border-radius:8px;border:0;background:#16a37b;color:#fff;font-weight:bold;cursor:pointer;font-family:inherit;}
+ .car-card button:disabled{background:#40536b;opacity:0.6;}
+ .tabs-h{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+ .tabs-h button{padding:8px 14px;border-radius:10px;border:2px solid #3a5578;background:#0e1825;color:#fff;cursor:pointer;font-family:inherit;font-weight:bold;}
+ .tabs-h button.active{background:#16a37b;border-color:#16a37b;}
+ .mission-item{background:#0e1825;border:1px solid #3a5578;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+ .mission-item.done{opacity:0.5;}
+ .mission-item .ttl{font-weight:bold;font-size:15px;}
+ .mission-item .desc{font-size:12px;color:#9ab0c7;margin-top:4px;}
+ .mission-item .rew{color:#ffd166;font-weight:bold;}
+ /* Chat */
+ .chat-toggle{position:absolute;top:260px;right:10px;width:48px;height:48px;border-radius:50%;}
+ .chat-box{position:absolute;top:310px;right:10px;width:min(320px,calc(100vw - 20px));height:280px;background:#0e1825dd;border:2px solid #3a5578;border-radius:14px;display:none;flex-direction:column;backdrop-filter:blur(6px);}
+ .chat-box.open{display:flex;}
+ .chat-messages{flex:1;overflow:auto;padding:10px;font-size:13px;line-height:1.5;}
+ .chat-messages .m{margin-bottom:4px;}
+ .chat-messages .u{color:#ffd166;font-weight:bold;}
+ .chat-input{display:flex;gap:6px;padding:8px;border-top:1px solid #3a5578;}
+ .chat-input input{flex:1;padding:8px;border-radius:8px;border:1px solid #3a5578;background:#0b1220;color:#fff;font-family:inherit;}
+ .chat-input button{padding:8px 14px;border-radius:8px;border:0;background:#16a37b;color:#fff;cursor:pointer;font-family:inherit;font-weight:bold;}
+ /* Voice */
+ .voice-panel{padding:10px;}
+ .voice-btn{padding:12px 20px;border-radius:12px;border:0;background:#16a37b;color:#fff;font-weight:bold;cursor:pointer;font-family:inherit;margin:6px;font-size:15px;}
+ .voice-btn.off{background:#ef476f;}
+ .voice-users{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
+ .voice-user{background:#0e1825;border:2px solid #06d6a0;border-radius:50%;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;}
+ .voice-user.muted{border-color:#ef476f;}
+ /* Toast */
+ #toast{position:fixed;bottom:260px;left:50%;transform:translateX(-50%);background:#0e1825ee;border:2px solid #ffd166;color:#ffd166;padding:10px 20px;border-radius:12px;font-weight:bold;z-index:200;display:none;pointer-events:none;}
+ /* Stats */
+ .stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+ .stat-box{background:#0e1825;border:1px solid #3a5578;border-radius:10px;padding:10px;min-width:110px;flex:1;text-align:center;}
+ .stat-box .lbl{font-size:11px;color:#9ab0c7;}
+ .stat-box .val{font-size:20px;font-weight:bold;color:#ffd166;}
+ /* Mobile */
+ @media (max-width:600px){
+  .side-menu .menu-item{font-size:11px;padding:8px 10px;min-width:unset;}
+  .side-menu .menu-item .lbl{display:none;}
+  .side-menu .menu-item{min-width:unset;}
+  .minimap{width:120px;height:120px;top:70px;}
+  .wheel-wrap{width:120px;height:120px;bottom:10px;left:10px;}
+  .pedal{width:60px;height:110px;}.pedal.brake{height:90px;}
+  .hornbtn{bottom:10px;left:140px;width:48px;height:48px;font-size:22px;}
+  .speedo{bottom:10px;left:50%;transform:translateX(-50%);padding:8px 18px;min-width:180px;}
+  .speedo .num{font-size:40px;}
+  .camerabtn{bottom:140px;right:10px;}
+  .nitrobtn{bottom:130px;right:90px;width:56px;height:56px;font-size:22px;}
+  .user-card{min-width:unset;padding:8px;}.avatar{width:36px;height:36px;font-size:16px;}.xpbar{width:80px;}
+  .icon-btn{width:44px;height:44px;font-size:9px;}.icon-btn .big{font-size:18px;}
+  .res{padding:6px 10px;}.res .v{font-size:13px;}
+ }
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<div id="loading"><div class="txt">جاري تحميل ULTIMATE CAR WORLD…</div><div class="bar"><div class="fill" id="loadfill"></div></div></div>
+
+<div id="auth">
+ <div class="box">
+  <div class="logo">🏙️🚗</div>
+  <h1>ULTIMATE CAR WORLD</h1>
+  <div class="sub">عالم قيادة مفتوح • اقتصاد حقيقي • لعب جماعي</div>
+  <div id="authTabs" class="tabs-h" style="justify-content:center"><button class="active" data-a="login">تسجيل الدخول</button><button data-a="reg">حساب جديد</button></div>
+  <input id="auser" placeholder="اسم المستخدم (أحرف/أرقام/_)">
+  <input id="apass" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)">
+  <input id="aemail" placeholder="البريد (اختياري)" style="display:none">
+  <button id="abtn">دخول</button>
+  <button class="alt" id="aguest">دخول كزائر</button>
+  <div class="err" id="aerr"></div>
+ </div>
+</div>
+
+<div id="hud" style="display:none">
+ <div class="topbar">
+  <div class="user-card"><div class="avatar">👤</div><div class="user-info"><div class="name" id="hname">Hussein</div><div class="lvl" id="hlvl">Lv. 1</div><div class="xpbar"><div id="hxp" style="width:0%"></div></div></div></div>
+  <div class="resources">
+   <div class="res cash">💵 <span class="v" id="hcash">0</span></div>
+   <div class="res coin">🪙 <span class="v" id="hcoin">12,560</span></div>
+  </div>
+ </div>
+ <div class="top-icons">
+  <div class="icon-btn" onclick="UCWUI.open('gifts')"><div class="big">🎁</div>المكافآت</div>
+  <div class="icon-btn" onclick="UCWUI.open('missions')"><div class="big">🏆</div>الإنجازات</div>
+  <div class="icon-btn" onclick="UCWUI.open('settings')"><div class="big">⚙️</div>الإعدادات</div>
+  <div class="icon-btn" onclick="UCW.logout()"><div class="big">⏻</div>خروج</div>
+ </div>
+ <div class="minimap"><div class="mm-n">N</div><canvas id="minimap"></canvas></div>
+ <div class="side-menu">
+  <div class="menu-item" onclick="UCWUI.open('dealer')"><span class="ico">🚗</span><span class="lbl">معرض السيارات</span></div>
+  <div class="menu-item" onclick="UCWUI.open('garage')"><span class="ico">🔧</span><span class="lbl">تعديل السيارة</span></div>
+  <div class="menu-item" onclick="UCWUI.open('home')"><span class="ico">🏠</span><span class="lbl">مرآبي</span></div>
+  <div class="menu-item" onclick="UCWUI.open('race')"><span class="ico">🏁</span><span class="lbl">السباقات</span></div>
+  <div class="menu-item" onclick="UCWUI.open('missions')"><span class="ico">✅</span><span class="lbl">المهام</span></div>
+  <div class="menu-item" onclick="UCWUI.open('business')"><span class="ico">💼</span><span class="lbl">الأعمال</span></div>
+  <div class="menu-item" onclick="UCWUI.open('economy')"><span class="ico">📊</span><span class="lbl">الاقتصاد</span></div>
+  <div class="menu-item" onclick="UCWUI.open('voice')"><span class="ico">🎙️</span><span class="lbl">صوت</span></div>
+ </div>
+ <div class="speedo"><div class="num" id="hspeed">0</div><div class="unit">كم/س</div><div class="gear" id="hgear">D</div><div class="fuel" id="hfuel">الوقود: ممتلئ</div></div>
+ <div class="wheel-wrap"><canvas id="wheel"></canvas></div>
+ <div class="pedals"><div class="pedal brake" id="brakeBtn"><div class="grip"></div></div><div class="pedal gas" id="gasBtn"><div class="grip"></div></div></div>
+ <button class="btn hornbtn" id="hornBtn">📢</button>
+ <button class="btn camerabtn" id="camBtn">📷</button>
+ <button class="btn nitrobtn" id="nitroBtn">🧪</button>
+ <button class="btn chat-toggle icon-btn" onclick="UCWUI.toggleChat()" style="top:270px"><div class="big">💬</div></button>
+ <div class="chat-box" id="chatBox"><div class="chat-messages" id="chatMsgs"></div><div class="chat-input"><input id="chatIn" placeholder="اكتب رسالة…"><button onclick="UCWUI.sendChat()">إرسال</button></div></div>
+</div>
+
+<div class="panel" id="panel-dealer"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>🚗 معرض السيارات</h2><div id="dealerList" class="car-grid"></div></div></div>
+<div class="panel" id="panel-garage"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>🔧 المرآب</h2><div id="garageList" class="car-grid"></div></div></div>
+<div class="panel" id="panel-home"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>🏠 مرآبي</h2><div id="homeStats"></div><h3 style="margin-top:18px;color:#ffd166">سياراتي</h3><div id="homeGarage" class="car-grid"></div></div></div>
+<div class="panel" id="panel-missions"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>✅ المهام والإنجازات</h2><div id="missionList"></div></div></div>
+<div class="panel" id="panel-race"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>🏁 السباقات</h2><p class="muted">السباقات متاحة عند الاقتراب من نقاط البداية على الخريطة (الأيقونات 🏁). قد إلى أحد المسارات المضيئة لتبدأ السباق!</p><div class="stats-row"><div class="stat-box"><div class="lbl">المسارات</div><div class="val">3</div></div><div class="stat-box"><div class="lbl">أفضل زمن</div><div class="val" id="bestTime">—</div></div></div></div></div>
+<div class="panel" id="panel-business"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>💼 الأعمال</h2><p class="muted">ابدأ عملك الخاص: اشترِ سيارة توصيل أو شاحنة واقبل مهام الأعمال من نقاط التحميل 📦 المنتشرة في المدينة. كل توصيلة تكسبك مالاً وXP.</p></div></div>
+<div class="panel" id="panel-economy"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>📊 سجل المحفظة</h2><div id="txList" style="max-height:60vh;overflow:auto"></div></div></div>
+<div class="panel" id="panel-settings"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>⚙️ الإعدادات</h2><div class="stats-row"><div class="stat-box"><button class="btn" onclick="UCW.audio.toggleMute()" id="muteBtn">🔊 الصوت</button></div><div class="stat-box"><button class="btn" onclick="UCW.toggleTraffic()" id="trafBtn">🚦 المرور</button></div><div class="stat-box"><button class="btn" onclick="UCW.toggleMP()" id="mpBtn">🌐 المتعدد</button></div></div></div></div>
+<div class="panel" id="panel-gifts"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>🎁 المكافآت اليومية</h2><p>مكافأة الدخول اليومي: <b style="color:#ffd166">+50,000 YER</b></p><button class="btn" id="claimGift" onclick="UCW.claimDaily()" style="margin-top:14px">استلم المكافأة</button></div></div>
+<div class="panel" id="panel-voice"><div class="sheet"><button class="close" onclick="UCWUI.close()">×</button><h2>🎙️ المحادثة الصوتية</h2><div class="voice-panel"><button class="voice-btn" id="voiceJoinBtn" onclick="UCWVoice.join()">انضم للغرفة الصوتية</button><button class="voice-btn off" id="micBtn" onclick="UCWVoice.toggleMic()" style="display:none">🎤 كتم الميكروفون</button><div class="voice-users" id="voiceUsers"></div><p class="muted" style="margin-top:14px;font-size:12px">المحادثة الصوتية تعمل WebRTC P2P بين اللاعبين في نفس الغرفة.</p></div></div></div>
+
+<div id="toast"></div>
+
+<script type="importmap">
+{
+ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "socket.io-client": "https://cdn.socket.io/4.8.1/socket.io.esm.min.js"
+ }
+}
+</script>
+<script>window.API=location.origin;</script>
+<script src="./src/offline-api.js"></script>
+<script type="module">
+import './src/main.js';
+</script>
+</body>
+</html>
